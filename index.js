@@ -75,7 +75,7 @@ async function addEmployee() {
       ]
     }
   ]).then(response => {
-    connection.query('INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUE(?, ?, ?, ?)', [response.firstName, response.lastName, response.roleChoice, response.manager], (err, results) => {
+    connection.query('INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUE(?, ?, ?, ?;)', [response.firstName, response.lastName, response.roleChoice, response.manager], (err, results) => {
       if (err) {
         console.log(err);
       }
@@ -95,7 +95,7 @@ async function createDepartment() {
       name: 'newDepartment',
     }
   ]).then(response => {
-    connection.query(`INSERT INTO department (name) VALUE (?)`, [response.newDepartment], (err, results) => {
+    connection.query(`INSERT INTO department (name) VALUE (?);`, [response.newDepartment], (err, results) => {
       if (err) {
         console.log(err);
       }
@@ -108,17 +108,22 @@ async function createDepartment() {
 
 //get all departments
 async function getDepartments() {
-  return await query('SELECT * FROM department');
+  return await query('SELECT * FROM department;');
 }
 
 //get all roles
 async function getRoles() {
-  return await query('SELECT * FROM role');
+  return await query('SELECT * FROM role;');
 }
 
 // get all employees
 async function getEmployees() {
-  return await query('SELECT * FROM employee');
+  return await query('SELECT * FROM employee;');
+}
+
+//get all managers
+async function getManagers() {
+  return await query('SELECT * FROM employee m WHERE (SELECT COUNT(*) FROM employee e WHERE e.manager_id = m.id) > 0;')
 }
 
 //create Role
@@ -195,8 +200,33 @@ async function updateEmpRole() {
       startProgram();
     });
   })
+}
 
+//view employee by managers
+async function viewEmpByManager(){
+  let managers = await getManagers();
 
+  inquirer.prompt([
+    {
+      type:'list',
+      name:'managers',
+      message:'Choose a Manager',
+      choices: managers.map(item => {
+        return {
+          value: item.id,
+          name: item.first_name + ' ' + item.last_name
+        }
+      })
+    }
+  ]).then( response => {
+    connection.query('SELECT * FROM employee WHERE manager_id = ?;', [response.managers], (error, results) => {
+      if(error) {
+        console.log(error)
+      }
+      console.table(results);
+      startProgram();
+    })
+  })
 }
 
 
