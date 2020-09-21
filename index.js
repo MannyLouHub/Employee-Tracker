@@ -160,8 +160,41 @@ async function newRole() {
 //update Roles
 
 async function updateEmpRole() {
-  let roles = getRoles();
-  let employees = getEmployees();
+  let roles = await getRoles();
+  let employees = await getEmployees();
+
+  inquirer.prompt([
+    {
+      type: 'list',
+      message: 'Choose an Employee',
+      name: 'employee',
+      choices: employees.map(item => {
+        return {
+          value: item.id,
+          name: item.first_name + ' ' + item.last_name
+        }
+      })
+    },
+    {
+      type: 'list',
+      name: 'role',
+      message: 'Choose Employee\'s new role',
+      choices: roles.map(item => {
+        return {
+          value: item.id,
+          name: item.title
+        }
+      })
+    }
+  ]).then(response => {
+    connection.query(`UPDATE employee SET role_id = ? WHERE id = ?`, [response.role, response.employee], (err, results) => {
+      if (err) {
+        console.log(err);
+      }
+      console.log('Employee Role has been updated');
+      startProgram();
+    });
+  })
 
 
 }
@@ -231,9 +264,9 @@ async function startProgram() {
 
 
 //Program connection to DB
-  connection.connect(async function (err) {
-    if (err) throw  err;
-    console.log("connected as id " + connection.threadId);
-    await startProgram();
-    // getDepatements();
-  });
+connection.connect(async function (err) {
+  if (err) throw  err;
+  console.log("connected as id " + connection.threadId);
+  await startProgram();
+  // getDepatements();
+});
