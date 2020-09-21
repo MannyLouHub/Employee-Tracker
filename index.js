@@ -1,6 +1,8 @@
 const mysql = require("mysql");
 const cTable = require('console.table');
 const inquirer = require("inquirer");
+
+
 const connection = mysql.createConnection({
   host: "localhost",
   // Your port; if not 3306
@@ -12,9 +14,26 @@ const connection = mysql.createConnection({
   database: "employee_tracker_db"
 });
 
+function query(queryString, params = []) {
+  let resolveFunc;
+  let rejectFunc;
+  const promise = new Promise((resolve, reject) => {
+    resolveFunc = resolve;
+    rejectFunc = reject;
+  });
+  connection.query(queryString, params, function (error, results, fields) {
+    if (error) rejectFunc(error);
+    else resolveFunc(results);
+  });
+  return promise;
+}
+
 
 //Add Employee Function
+async
 function addEmployee() {
+  let departments = getDepartments()
+  let roles = getRoles()
   inquirer.prompt([
     {
       type: 'input',
@@ -26,12 +45,7 @@ function addEmployee() {
       message: `Employee's Last Name?`,
       name: 'lastName',
     },
-    {
-      type: 'list',
-      message: `What will this Employee's Role be?`,
-      choice: ['Test', 'Test', 'Test'],
-      name: 'role',
-    },
+
     {
       type: 'input',
       message: `What is this Employee's department?`,
@@ -53,11 +67,59 @@ function createDepartment() {
       name: 'newDepartment',
     }
   ]).then(response => {
-    connection.query(`INSERT INTO department (name) VALUE ('${response.newDepartment}')`, (err, results) => {
+    connection.query(`INSERT INTO department (name) VALUE (?)`, [response.newDepartment], (err, results) => {
       if (err) {
         console.log(err);
       }
-      console.table(results);
+      console.log('New Department created');
+      startProgram();
+    });
+  })
+}
+
+// //view departments
+//  function viewDepartments()
+
+//get all departments
+async function getDepartments() {
+  return await query('SELECT * FROM department');
+}
+//get all roles
+async function getRoles() {
+  return await query('SELECT * FROM roles')
+}
+
+//create Role
+async function newRole() {
+  let departments = await getDepartments();
+  inquirer.prompt([
+    {
+      type: 'input',
+      message: 'Role Name?',
+      name: 'newRole',
+    },
+    {
+      type: 'input',
+      message: 'Default Salary for new Role?',
+      name: 'defSalary'
+    },
+    {
+      type: 'list',
+      name:'choice',
+      message: 'Please choose a department',
+      choices: departments.map(item =>{
+        return{
+          value: item.id,
+          name: item.name
+        }
+      })
+    }
+  ]).then(response => {
+    connection.query(`INSERT INTO role (title, salary, department_id) VALUE (?, ?, ?)`, [response.newRole, response.defSalary, response.choice], (err, results) => {
+      if (err) {
+        console.log(err);
+      }
+      console.log('New Role Created')
       startProgram();
     })
   })
@@ -65,7 +127,7 @@ function createDepartment() {
 
 
 // Start Program Function
-function startProgram() {
+async function startProgram() {
   const options = [
     'View Current Employees', //0
     'Add New Employee', //1
@@ -87,7 +149,7 @@ function startProgram() {
     message: 'What would you like to do?',
     choices: options,
     name: 'choice'
-  }]).then(response => {
+  }]).then(async response => {
     if (response.choice === options[0]) {
       viewEmployees();
     } else if (response.choice === options [1]) {
@@ -107,7 +169,8 @@ function startProgram() {
     } else if (response.choice === options[8]) {
       createDepartment();
     } else if (response.choice === options[9]) {
-      viewDepartments();
+      const departments = await getDepartments();
+      console.table(departments);
     } else if (response.choice === options[10]) {
       removeDepartment();
     } else if (response.choice === options[11]) {
@@ -120,9 +183,12 @@ function startProgram() {
   })
 }
 
+(async function () {
 //Program connection to DB
-connection.connect(function (err) {
-  if (err) throw  err;
-  console.log("connected as id " + connection.threadId);
-  startProgram();
-});
+  connection.connect(async function (err) {
+    if (err) throw  err;
+    console.log("connected as id " + connection.threadId);
+    await startProgram();
+    // getDepatements();
+  });
+}());
