@@ -203,14 +203,14 @@ async function updateEmpRole() {
 }
 
 //view employee by managers
-async function viewEmpByManager(){
+async function viewEmpByManager() {
   let managers = await getManagers();
 
   inquirer.prompt([
     {
-      type:'list',
-      name:'managers',
-      message:'Choose a Manager',
+      type: 'list',
+      name: 'managers',
+      message: 'Choose a Manager',
       choices: managers.map(item => {
         return {
           value: item.id,
@@ -218,12 +218,131 @@ async function viewEmpByManager(){
         }
       })
     }
-  ]).then( response => {
+  ]).then(response => {
     connection.query('SELECT * FROM employee WHERE manager_id = ?;', [response.managers], (error, results) => {
-      if(error) {
+      if (error) {
         console.log(error)
       }
       console.table(results);
+      startProgram();
+    })
+  })
+}
+
+//update employee manager
+async function updateEmpManager() {
+  let manager = await getManagers();
+  let employees = await getEmployees();
+
+  inquirer.prompt([
+    {
+      type: 'list',
+      message: 'Choose an Employee',
+      name: 'employee',
+      choices: employees.map(item => {
+        return {
+          value: item.id,
+          name: item.first_name + ' ' + item.last_name
+        }
+      })
+    },
+    {
+      type: 'list',
+      name: 'manager',
+      message: 'Choose Employee\'s new Manager',
+      choices: manager.map(item => {
+        return {
+          value: item.id,
+          name: item.first_name + ' ' + item.last_name
+        }
+      })
+    }
+  ]).then(response => {
+    connection.query(`UPDATE employee SET manager_id = ? WHERE id = ?;`, [response.manager, response.employee], (err, results) => {
+      if (err) {
+        console.log(err);
+      }
+      console.log('Employee Manager has been updated');
+      startProgram();
+    });
+  })
+}
+
+//remove department
+async function removeDepartment() {
+  let departments = await getDepartments();
+  inquirer.prompt([
+    {
+      type: 'list',
+      name: 'departments',
+      message: 'Choose a department',
+      choices: departments.map(item => {
+        return {
+          value: item.id,
+          name: item.first_name + ' ' + item.last_name
+        }
+      })
+    }
+  ]).then(response => {
+    connection.query('DELETE FROM department WHERE id = ?;', [response.departments], (error, results) => {
+      if (error) {
+        console.log(error);
+      }
+      console.log('This department has been delete');
+      startProgram();
+    })
+  })
+
+}
+
+//remove role
+async function removeRole() {
+  let roles = await getRoles()
+  inquirer.prompt([
+    {
+      type:'list',
+      name:'role',
+      message:'Choose a Role',
+      choices: roles.map( items => {
+        return{
+          value: items.id,
+          name: items.title
+        }
+      })
+    }
+  ]).then(response => {
+    connection.query('DELETE FROM role WHERE id = ?;',[response.role], (error, results) => {
+      if(error){
+        console.log(error)
+      }
+      console.log('The Roles has been deleted');
+      startProgram();
+    })
+  })
+}
+
+//remove employee
+
+async function removeEmployee() {
+  let employee = await getEmployees()
+  inquirer.prompt([
+    {
+      type: 'list',
+      name: 'employee',
+      message: 'Choose a Employee',
+      choices: employee.map(items => {
+        return {
+          value: items.id,
+          name: items.first_name + ' ' + items.last_name
+        }
+      })
+    }
+  ]).then(response => {
+    connection.query('DELETE FROM employee WHERE id = ?;', [response.employee], (error, results) => {
+      if (error) {
+        console.log(error)
+      }
+      console.log('The Employee has been deleted');
       startProgram();
     })
   })
@@ -233,13 +352,13 @@ async function viewEmpByManager(){
 // Start Program Function
 async function startProgram() {
   const options = [
-    'View Current Employees', //0
+    'View Employees', //0
     'Add New Employee', //1
-    'Delete Current Employee', //2
+    'Delete Employee', //2
     'Update Employee Role', //3
     'Update Employee Manager',//4
     'Create a New Role', //5
-    'View Current Roles', //6
+    'View Roles', //6
     'Delete Role', //7
     'Create Department', //8
     'View Department', //9
@@ -261,29 +380,29 @@ async function startProgram() {
     } else if (response.choice === options [1]) {
       await addEmployee();
     } else if (response.choice === options[2]) {
-      removeEmployee();
+      await removeEmployee();
     } else if (response.choice === options[3]) {
-      updateEmpRole();
+      await updateEmpRole();
     } else if (response.choice === options[4]) {
-      updateEmpManager();
+      await updateEmpManager();
     } else if (response.choice === options[5]) {
-      newRole();
+      await newRole();
     } else if (response.choice === options[6]) {
       const roles = await getRoles();
       console.table(roles);
       await startProgram();
     } else if (response.choice === options[7]) {
-      removeRole();
+      await removeRole();
     } else if (response.choice === options[8]) {
-      createDepartment();
+      await createDepartment();
     } else if (response.choice === options[9]) {
       const departments = await getDepartments();
       console.table(departments);
       await startProgram();
     } else if (response.choice === options[10]) {
-      removeDepartment();
+      await removeDepartment();
     } else if (response.choice === options[11]) {
-      viewEmpByManager();
+      await viewEmpByManager();
     } else if (response.choice === options[12]) {
       viewBudget();
     } else if (response.choice === options[13]) {
