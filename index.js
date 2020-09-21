@@ -30,10 +30,10 @@ function query(queryString, params = []) {
 
 
 //Add Employee Function
-async
-function addEmployee() {
-  let departments = getDepartments()
-  let roles = getRoles()
+async function addEmployee() {
+  let manager = await getEmployees();
+  let roles = await getRoles();
+
   inquirer.prompt([
     {
       type: 'input',
@@ -45,21 +45,49 @@ function addEmployee() {
       message: `Employee's Last Name?`,
       name: 'lastName',
     },
-
     {
-      type: 'input',
-      message: `What is this Employee's department?`,
-      choice: ['HR', 'IT', 'Legal', 'Executive', 'CS', 'Development', 'Security'],
-      name: 'department',
+      type: 'list',
+      name: 'roleChoice',
+      message: 'Choose Employee\'s role',
+      choices: roles.map(item => {
+        return {
+          value: item.id,
+          name: item.title
+        }
+      })
     },
-  ]).then((response) => {
-    connection.query('INSERT INTO employee(first_name, last_name,)')
+    {
+      type: 'list',
+      name: 'manager',
+      message: 'Choose Manager',
+      choices: [
+        {
+          name: 'None',
+          value: null
+        },
+        ...manager.map(item => {
+          return {
+            value: item.id,
+            name: item.first_name + ' ' + item.last_name
+          }
+        }),
+
+      ]
+    }
+  ]).then(response => {
+    connection.query('INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUE(?, ?, ?, ?)', [response.firstName, response.lastName, response.roleChoice, response.manager], (err, results) => {
+      if (err) {
+        console.log(err);
+      }
+      console.log('New Employee Added')
+      startProgram();
+    })
   })
 }
 
 
 //Create Department
-function createDepartment() {
+async function createDepartment() {
   inquirer.prompt([
     {
       type: 'input',
@@ -77,16 +105,20 @@ function createDepartment() {
   })
 }
 
-// //view departments
-//  function viewDepartments()
 
 //get all departments
 async function getDepartments() {
   return await query('SELECT * FROM department');
 }
+
 //get all roles
 async function getRoles() {
-  return await query('SELECT * FROM roles')
+  return await query('SELECT * FROM role');
+}
+
+// get all employees
+async function getEmployees() {
+  return await query('SELECT * FROM employee');
 }
 
 //create Role
@@ -105,10 +137,10 @@ async function newRole() {
     },
     {
       type: 'list',
-      name:'choice',
+      name: 'choice',
       message: 'Please choose a department',
-      choices: departments.map(item =>{
-        return{
+      choices: departments.map(item => {
+        return {
           value: item.id,
           name: item.name
         }
@@ -123,6 +155,15 @@ async function newRole() {
       startProgram();
     })
   })
+}
+
+//update Roles
+
+async function updateEmpRole() {
+  let roles = getRoles();
+  let employees = getEmployees();
+
+
 }
 
 
@@ -151,9 +192,11 @@ async function startProgram() {
     name: 'choice'
   }]).then(async response => {
     if (response.choice === options[0]) {
-      viewEmployees();
+      const employee = await getEmployees();
+      console.table(employee);
+      await startProgram();
     } else if (response.choice === options [1]) {
-      addEmployee();
+      await addEmployee();
     } else if (response.choice === options[2]) {
       removeEmployee();
     } else if (response.choice === options[3]) {
@@ -163,7 +206,9 @@ async function startProgram() {
     } else if (response.choice === options[5]) {
       newRole();
     } else if (response.choice === options[6]) {
-      viewRoles();
+      const roles = await getRoles();
+      console.table(roles);
+      await startProgram();
     } else if (response.choice === options[7]) {
       removeRole();
     } else if (response.choice === options[8]) {
@@ -171,6 +216,7 @@ async function startProgram() {
     } else if (response.choice === options[9]) {
       const departments = await getDepartments();
       console.table(departments);
+      await startProgram();
     } else if (response.choice === options[10]) {
       removeDepartment();
     } else if (response.choice === options[11]) {
@@ -183,7 +229,7 @@ async function startProgram() {
   })
 }
 
-(async function () {
+
 //Program connection to DB
   connection.connect(async function (err) {
     if (err) throw  err;
@@ -191,4 +237,3 @@ async function startProgram() {
     await startProgram();
     // getDepatements();
   });
-}());
