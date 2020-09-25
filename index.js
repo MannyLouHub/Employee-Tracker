@@ -75,7 +75,7 @@ async function addEmployee() {
       ]
     }
   ]).then(response => {
-    connection.query('INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUE(?, ?, ?, ?;)', [response.firstName, response.lastName, response.roleChoice, response.manager], (err, results) => {
+    connection.query('INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUE(?, ?, ?, ?)', [response.firstName, response.lastName, response.roleChoice, response.manager], (err, results) => {
       if (err) {
         console.log(err);
       }
@@ -163,7 +163,6 @@ async function newRole() {
 }
 
 //update Roles
-
 async function updateEmpRole() {
   let roles = await getRoles();
   let employees = await getEmployees();
@@ -300,19 +299,19 @@ async function removeRole() {
   let roles = await getRoles()
   inquirer.prompt([
     {
-      type:'list',
-      name:'role',
-      message:'Choose a Role',
-      choices: roles.map( items => {
-        return{
+      type: 'list',
+      name: 'role',
+      message: 'Choose a Role',
+      choices: roles.map(items => {
+        return {
           value: items.id,
           name: items.title
         }
       })
     }
   ]).then(response => {
-    connection.query('DELETE FROM role WHERE id = ?;',[response.role], (error, results) => {
-      if(error){
+    connection.query('DELETE FROM role WHERE id = ?;', [response.role], (error, results) => {
+      if (error) {
         console.log(error)
       }
       console.log('The Roles has been deleted');
@@ -322,7 +321,6 @@ async function removeRole() {
 }
 
 //remove employee
-
 async function removeEmployee() {
   let employee = await getEmployees()
   inquirer.prompt([
@@ -344,6 +342,33 @@ async function removeEmployee() {
       }
       console.log('The Employee has been deleted');
       startProgram();
+    })
+  })
+}
+
+async function viewBudget() {
+  let departments = await getDepartments()
+
+  inquirer.prompt([
+    {
+      type: 'list',
+      name: 'department',
+      message: 'Choose a Department',
+      choices: departments.map(item => {
+        return {
+          value: item.id,
+          name: item.name
+        }
+      })
+    }
+  ]).then(response => {
+    connection.query('SELECT department.id, department.name, SUM(role.salary) as budget FROM employee JOIN role on employee.role_id = role.id JOIN department ON role.department_id = department.id WHERE department.id = ? GROUP BY department.id;', [response.department], (err, results)=> {
+      if(err){
+        console.log(err)
+        connection.end();
+      }
+      console.table(results);
+      startProgram()
     })
   })
 }
@@ -404,7 +429,7 @@ async function startProgram() {
     } else if (response.choice === options[11]) {
       await viewEmpByManager();
     } else if (response.choice === options[12]) {
-      viewBudget();
+      await viewBudget();
     } else if (response.choice === options[13]) {
       connection.end();
     }
