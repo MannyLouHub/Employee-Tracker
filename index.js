@@ -278,12 +278,12 @@ async function removeDepartment() {
       choices: departments.map(item => {
         return {
           value: item.id,
-          name: item.first_name + ' ' + item.last_name
+          name: item.name
         }
       })
     }
   ]).then(response => {
-    connection.query('DELETE FROM department WHERE id = ?;', [response.departments], (error, results) => {
+    connection.query('DELETE FROM department WHERE id = ?', [response.departments], (error, results) => {
       if (error) {
         console.log(error);
       }
